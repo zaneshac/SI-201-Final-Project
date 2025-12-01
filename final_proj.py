@@ -51,6 +51,18 @@ CREATE TABLE IF NOT EXISTS pokemon_episodes (
 );
 """
 
+WORD_COUNTS_SCHEMA = """
+CREATE TABLE IF NOT EXISTS word_counts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    pokemon_id INTEGER,
+    word TEXT,
+    count INTEGER,
+    source TEXT,         -- 'wordcloudapi' or 'local'
+    UNIQUE(pokemon_id, word, source),
+    FOREIGN KEY (pokemon_id) REFERENCES pokemon(id)
+);
+"""
+
 def get_connection(db_path: Optional[str] = None):
     path = db_path or DB_PATH
     conn = sqlite3.connect(path)
@@ -440,3 +452,172 @@ def run_all_and_visualize(db_path=DB_PATH):
 
 if __name__ == "__main__":
     run_all_and_visualize()
+
+"""
+get_wordcloud_data.py
+
+For each pokemon in the DB:
+- fetch species description from PokéAPI (text)
+- either call Word Cloud API (via RapidAPI) to get word frequencies OR
+  compute local word frequencies as fallback
+- store results in word_counts table
+- respects <=25 insertions per run (configurable)
+"""
+
+import os
+import re
+import sqlite3
+import requests
+from collections import Counter
+from typing import Dict, List
+from db_utils import get_connection, initialize_db
+
+POKEAPI_SPECIES = "https://pokeapi.co/api/v2/pokemon-species/{}"
+# RapidAPI config (optional)
+RAPIDAPI_HOST = os.environ.get("RAPIDAPI_WORDCLOUD_HOST", "Textvis-word-cloud.p.rapidapi.com")
+RAPIDAPI_KEY = os.environ.get("RAPIDAPI_KEY")  # set this if you want to call the Word Cloud API
+# Note: RapidAPI host string may vary; environment var allows you to supply the correct host if needed.
+
+DEFAULT_MAX_INSERTS = 25
+STOPWORDS = {
+    # a small stopword set; extend as needed
+    "the","and","a","an","of","in","to","is","it","for","on","with","that","this","as","by","from","are","was","be","its"
+}
+
+def get_pokemon_list(conn: sqlite3.Connection, limit: int = 200) -> List[Dict]:
+    cur = conn.cursor()
+    cur.execute("SELECT id, name FROM pokemon ORDER BY id LIMIT ?;", (limit,))
+    return [{"id": r[0], "name": r[1]} for r in cur.fetchall()]
+
+def fetch_species_description(pokemon_name_or_id: str) -> str:
+    """
+    Use the species endpoint to get flavor_text_entries (english).
+    """
+    url = POKEAPI_SPECIES.format(pokemon_name_or_id)
+    r = requests.get(url, timeout=30)
+    r.raise_for_status()
+    data = r.json()
+    entries = data.get("flavor_text_entries", [])
+    # prefer english entries; join them into a single text blob
+    texts = []
+    for e in entries:
+        if e.get("language", {}).get("name") == "en":
+            # remove newlines and weird characters
+            txt = e.get("flavor_text", "").replace("\n", " ").replace("\f", " ").strip()
+            texts.append(txt)
+    return " ".join(texts)
+
+def call_wordcloudapi_via_rapidapi(text: str) -> Dict[str, int]:
+    """
+    Attempt to call Word Cloud API via RapidAPI. Because RapidAPI endpoints and payloads might vary,
+    we make this function resilient and expect that if credentials are missing or the endpoint
+    doesn't return frequencies, we fall back to local processing.
+    NOTE: Users must set RAPIDAPI_KEY (and optionally RAPIDAPI_WORDCLOUD_HOST) env vars to enable this.
+    """
+    if not RAPIDAPI_KEY:
+        raise RuntimeError("RAPIDAPI_KEY not set")
+
+    # Example RapidAPI endpoint structure used by many RapidAPI 'word cloud' listings:
+    # This is a best-effort: many word-cloud RapidAPI endpoints accept JSON with "text" and return "words" list.
+    url = f"https://{RAPIDAPI_HOST}/api/wordcloud"
+    headers = {
+        "content-type": "application/json",
+        "X-RapidAPI-Key": RAPIDAPI_KEY,
+        "X-RapidAPI-Host": RAPIDAPI_HOST
+    }
+    payload = {"text": text}
+    resp = requests.post(url, json=payload, headers=headers, timeout=30)
+    resp.raise_for_status()
+    data = resp.json()
+    # try to find word counts in the response in common shapes:
+    #  - data["words"] = [{"word":"x","count":5}, ...]
+    #  - data["counts"] = {"x": 5, ...}
+    if isinstance(data, dict):
+        if "words" in data and isinstance(data["words"], list):
+            return {w.get("word"): int(w.get("count", 0)) for w in data["words"] if w.get("word")}
+        if "counts" in data and isinstance(data["counts"], dict):
+            return {k: int(v) for k,v in data["counts"].items()}
+        # sometimes the API returns nested object, try to search:
+        for v in data.values():
+            if isinstance(v, list):
+                # take first plausible list of dicts
+                for item in v:
+                    if isinstance(item, dict) and "word" in item and "count" in item:
+                        return {w.get("word"): int(w.get("count", 0)) for w in v}
+    # if we get here, can't parse; raise to trigger fallback
+    raise ValueError("Unexpected response shape from Word Cloud API")
+
+def local_word_counts(text: str, top_n: int = 50) -> Dict[str, int]:
+    # simple tokenizer, lower, remove non-alpha, filter stopwords, count
+    words = re.findall(r"\b[a-zA-Z']{2,}\b", text.lower())
+    filtered = [w for w in words if w not in STOPWORDS]
+    counts = Counter(filtered)
+    most = dict(counts.most_common(top_n))
+    return most
+
+def store_word_counts(conn: sqlite3.Connection, pokemon_id: int, counts: Dict[str,int], source: str):
+    cur = conn.cursor()
+    inserted = 0
+    for word, cnt in counts.items():
+        try:
+            cur.execute(
+                "INSERT INTO word_counts (pokemon_id, word, count, source) VALUES (?, ?, ?, ?);",
+                (pokemon_id, word, int(cnt), source)
+            )
+            inserted += 1
+        except sqlite3.IntegrityError:
+            conn.rollback()
+    conn.commit()
+    return inserted
+
+def run(max_inserts_per_run: int = DEFAULT_MAX_INSERTS, db_path: str = None):
+    conn = get_connection(db_path)
+    initialize_db(conn)
+    pokemon_list = get_pokemon_list(conn, limit=200)
+    total_inserted = 0
+
+    for p in pokemon_list:
+        if total_inserted >= max_inserts_per_run:
+            break
+        pid = p["id"]
+        pname = p["name"]
+        # skip if we already have word_counts for this pokemon (avoid duplicates)
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM word_counts WHERE pokemon_id = ?;", (pid,))
+        if cur.fetchone()[0] > 0:
+            continue
+
+        try:
+            text = fetch_species_description(pname)
+        except Exception as e:
+            print(f"Failed to fetch species for {pname}: {e}")
+            continue
+
+        if not text.strip():
+            print(f"No species text for {pname}, skipping.")
+            continue
+
+        inserted_for_pokemon = 0
+        # try remote API first if available
+        if RAPIDAPI_KEY:
+            try:
+                counts = call_wordcloudapi_via_rapidapi(text)
+                inserted_for_pokemon = store_word_counts(conn, pid, counts, source="wordcloudapi")
+                print(f"[{pname}] inserted {inserted_for_pokemon} word counts from RapidAPI.")
+            except Exception as e:
+                print(f"RapidAPI call failed for {pname}: {e}. Falling back to local counts.")
+                counts = local_word_counts(text)
+                inserted_for_pokemon = store_word_counts(conn, pid, counts, source="local")
+                print(f"[{pname}] inserted {inserted_for_pokemon} word counts (local).")
+        else:
+            counts = local_word_counts(text)
+            inserted_for_pokemon = store_word_counts(conn, pid, counts, source="local")
+            print(f"[{pname}] inserted {inserted_for_pokemon} word counts (local).")
+
+        total_inserted += inserted_for_pokemon
+
+    conn.close()
+    print(f"Total word-count rows inserted this run: {total_inserted} (limit was {max_inserts_per_run}).")
+
+if __name__ == "__main__":
+    run()
