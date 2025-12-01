@@ -2,7 +2,7 @@
 # Used ChatGPT for syntax, debugging, and pointing out errors. 
 # Zanesha wrote functions for PokéAPI
 # Ariana wrote functions for Word Cloud API
-# Kevin wrote functions for Lyrics & Music API and AniDB
+# Kevin wrote functions for Ksoft Lyrics API and Jikan API
 
 import sqlite3
 import requests
