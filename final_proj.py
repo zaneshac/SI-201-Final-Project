@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 DB_PATH = "si201_project.db"
 
 # API keys (set as environment variables)
-OMDB_API_KEY = os.getenv("OMDB_API_KEY", "")  # e.g., "your_omdb_key"
+OMDB_API_KEY = os.getenv("OMDB_API_KEY", "664d8386")  # e.g., "your_omdb_key"
 KSOFT_API_KEY = os.getenv("KSOFT_API_KEY", "")  # e.g., "your_ksoft_key"
 
 # ----------- Database schema & helper functions -------------
