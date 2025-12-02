@@ -10,6 +10,8 @@ import requests
 import time
 from typing import List, Optional, Tuple
 import math
+import spotipy
+
 
 # Visualization
 import matplotlib.pyplot as plt
@@ -21,9 +23,9 @@ from spotipy.oauth2 import SpotifyClientCredentials
 DB_PATH = "si201_project.db"
 
 # API keys (set as environment variables)
-OMDB_API_KEY = os.getenv("OMDB_API_KEY", "")
-SPOTIPY_CLIENT_ID = os.getenv("SPOTIPY_CLIENT_ID", "")
-SPOTIPY_CLIENT_SECRET = os.getenv("SPOTIPY_CLIENT_SECRET", "")
+OMDB_API_KEY = os.getenv("OMDB_API_KEY", "664d8386")
+SPOTIPY_CLIENT_ID = os.getenv("SPOTIPY_CLIENT_ID", "fc80ead3b4f0410da95885d93e837534")
+SPOTIPY_CLIENT_SECRET = os.getenv("SPOTIPY_CLIENT_SECRET", "2535128eadda464c8890983d1ac28786")
 
 # ----------------- Spotify client ------------------------
 spotify_client = None
