@@ -1,8 +1,8 @@
-# Collaborator Names: (Zanesha Chowdhury - 10440553), (Ariana Namei - ), (Kevin Zang - )
+# Collaborator Names: (Zanesha Chowdhury - 10440553), (Ariana Namei - ), (Kevin Zang - 72328773 )
 # Used ChatGPT for syntax, debugging, and pointing out errors. 
 # Zanesha wrote functions for PokéAPI
-# Ariana wrote functions for Word Cloud API
-# Kevin wrote functions for Ksoft Lyrics API and Jikan API
+# Ariana wrote functions for OMDB, Weather API
+# Kevin wrote functions for Spotipy
 
 import os
 import sqlite3
@@ -385,13 +385,16 @@ def visualize_avg_base_exp_by_type(conn: sqlite3.Connection, top_n: int = 12):
     avg_be = [d[1] for d in data][:top_n]
 
     plt.figure(figsize=(10, 6))
-    plt.bar(types, avg_be)
-    plt.title("Average Base Experience by Pokémon Primary Type")
-    plt.xlabel("Type")
-    plt.ylabel("Average Base Experience")
-    plt.xticks(rotation=45)
+    plt.bar(types, avg_be, color='steelblue', edgecolor='navy', linewidth=1.2)
+    plt.title("Average Base Experience by Pokémon Primary Type", fontsize=14, fontweight='bold')
+    plt.xlabel("Type", fontsize=12)
+    plt.ylabel("Average Base Experience", fontsize=12)
+    plt.xticks(rotation=45, ha='right')
+    plt.grid(axis='y', alpha=0.3, linestyle='--')
     plt.tight_layout()
-    plt.show()
+    plt.savefig("pokemon_base_exp_by_type.png", dpi=300, bbox_inches='tight')
+    plt.close()
+    print("✓ Saved visualization: pokemon_base_exp_by_type.png")
 
 def visualize_avg_popularity_per_artist(conn: sqlite3.Connection, top_n: int = 12):
     data = calculate_avg_popularity_per_artist(conn)
