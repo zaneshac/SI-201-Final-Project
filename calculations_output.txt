@@ -1,0 +1,153 @@
+================================================================================
+SI 201 FINAL PROJECT - CALCULATED DATA RESULTS
+================================================================================
+
+1. POKEMON: Average Base Experience by Type
+--------------------------------------------------------------------------------
+Type            Avg Base Exp         Count     
+--------------------------------------------------------------------------------
+ice             210.00               2         
+psychic         174.88               8         
+fairy           165.00               2         
+dragon          159.00               3         
+electric        157.00               9         
+fire            151.67               12        
+ghost           143.00               3         
+fighting        138.29               7         
+grass           135.08               12        
+normal          131.95               22        
+rock            129.44               9         
+water           127.93               28        
+poison          123.07               14        
+ground          109.00               8         
+bug             105.92               12        
+
+2. SPOTIFY: Average Track Popularity per Artist
+--------------------------------------------------------------------------------
+Artist                                   Avg Popularity       Count     
+--------------------------------------------------------------------------------
+The Weeknd, JENNIE, Lily-Rose Depp       92.00                1         
+Lady Gaga, Bruno Mars                    92.00                1         
+Taylor Swift                             91.56                9         
+The Weeknd, Playboi Carti                91.00                1         
+The Weeknd, Daft Punk                    90.00                1         
+Taylor Swift, Sabrina Carpenter          90.00                1         
+Drake, Wizkid, Kyla                      89.00                1         
+ROSÉ, Bruno Mars                         88.00                1         
+DJ Snake, Justin Bieber                  88.00                1         
+Billie Eilish, Khalid                    88.00                1         
+Coldplay                                 87.71                7         
+The Weeknd                               87.50                4         
+The Chainsmokers, Coldplay               87.00                1         
+Kendrick Lamar, SZA                      87.00                2         
+Kanye West, Dwele                        87.00                1         
+Justin Bieber, Chance the Rapper         87.00                1         
+Billie Eilish                            86.89                9         
+Justin Bieber                            86.67                6         
+Lil Wayne, Drake, Future                 86.00                1         
+Bruno Mars                               85.60                5         
+Ariana Grande                            85.40                5         
+The Weeknd, Ariana Grande                85.00                1         
+Sean Paul, Dua Lipa                      85.00                1         
+Kendrick Lamar, Lefty Gunplay            85.00                1         
+Eminem, Rihanna                          85.00                2         
+Drake, Chris Brown                       85.00                1         
+Akon, Eminem                             85.00                1         
+Drake                                    84.75                4         
+Eminem                                   84.50                4         
+Mark Ronson, Bruno Mars                  84.00                1         
+Kanye West, Syleena Johnson              84.00                1         
+Kanye West, Pusha T                      84.00                1         
+Justin Bieber, Nicki Minaj               84.00                1         
+Eminem, Nate Dogg                        84.00                1         
+B.o.B, Bruno Mars                        84.00                1         
+Ariana Grande, The Weeknd                84.00                1         
+Kendrick Lamar                           83.67                3         
+Kendrick Lamar, Zacari                   83.00                1         
+Kanye West, Chris Martin                 83.00                1         
+Kanye West                               83.00                5         
+Future, The Weeknd                       83.00                1         
+Future, Drake, Tems                      83.00                1         
+Ed Sheeran, Elton John                   83.00                1         
+Rihanna                                  82.57                7         
+Taylor Swift, Post Malone                82.00                1         
+Post Malone                              82.00                2         
+PARTYNEXTDOOR, Drake, Yebba              82.00                1         
+Kelly Clarkson, Ariana Grande            82.00                1         
+Future, Metro Boomin, Kendrick Lamar     82.00                1         
+Dua Lipa, DaBaby                         82.00                1         
+Ed Sheeran                               81.17                6         
+Dua Lipa                                 81.17                6         
+Ty Dolla $ign, The Weeknd, Wiz Khalifa, Mustard 81.00                1         
+Post Malone, Morgan Wallen               81.00                1         
+Eminem, Juice WRLD                       81.00                1         
+Cynthia Erivo, Ariana Grande             81.00                2         
+Lady Gaga                                80.33                3         
+Post Malone, Quavo                       80.00                1         
+Playboi Carti, The Weeknd                80.00                1         
+Kanye West, Jamie Foxx                   80.00                1         
+Calvin Harris, Dua Lipa                  80.00                1         
+Lil Wayne, Drake                         79.00                1         
+Lady Gaga, Colby O'Donis                 79.00                1         
+Lady Gaga, Beyoncé                       79.00                1         
+Kendrick Lamar, Jay Rock                 79.00                1         
+Harry Styles                             78.90                10        
+Don Toliver, Justin Bieber, Future       78.00                1         
+Noah Kahan, Post Malone                  77.00                1         
+Beyoncé                                  77.00                2         
+Adele                                    76.80                10        
+Beyoncé, JAY-Z                           76.50                2         
+Rihanna, Mikky Ekko                      76.00                1         
+The Beatles                              75.80                10        
+BigXthaPlug, Post Malone                 75.00                1         
+Morgan Wallen, Post Malone               73.00                1         
+Elton John, Dua Lipa, PNAU               70.00                1         
+
+3. WEATHER: Temperature Variability by City
+--------------------------------------------------------------------------------
+City                      Temp Variability     Count     
+--------------------------------------------------------------------------------
+Ann Arbor, MI             0.00                 9         
+Atlanta, GA               0.00                 7         
+Austin, TX                0.00                 7         
+Boston, MA                0.00                 7         
+Chicago, IL               0.00                 9         
+Dallas, TX                0.00                 7         
+Denver, CO                0.00                 7         
+Detroit, MI               0.00                 9         
+Houston, TX               0.00                 7         
+Las Vegas, NV             0.00                 7         
+Los Angeles, CA           0.00                 9         
+Miami, FL                 0.00                 7         
+Minneapolis, MN           0.00                 7         
+New York, NY              0.00                 9         
+Philadelphia, PA          0.00                 7         
+Phoenix, AZ               0.00                 7         
+Portland, OR              0.00                 7         
+San Diego, CA             0.00                 7         
+San Francisco, CA         0.00                 7         
+Seattle, WA               0.00                 7         
+
+4. MOVIES: Runtime vs IMDb Rating Correlation
+--------------------------------------------------------------------------------
+Correlation Coefficient: 0.378038
+Interpretation: Moderate correlation
+
+5. POKEMON JOIN QUERY: Top 10 Pokemon by Total Stats
+--------------------------------------------------------------------------------
+ID    Name            Type       HP    Atk   Def   Spd   Total   
+--------------------------------------------------------------------------------
+150   mewtwo          psychic    106   110   90    130   436     
+149   dragonite       dragon     91    134   95    80    400     
+151   mew             psychic    100   100   100   100   400     
+91    cloyster        water      50    95    180   70    395     
+112   rhydon          ground     105   130   120   40    395     
+128   tauros          normal     75    100   95    110   380     
+130   gyarados        water      95    125   79    81    380     
+142   aerodactyl      rock       80    105   65    130   380     
+59    arcanine        fire       90    110   80    95    375     
+76    golem           rock       80    120   130   45    375     
+
+================================================================================
+End of calculations
+================================================================================

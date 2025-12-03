@@ -1,0 +1,38 @@
+# Python virtual environment
+venv/
+env/
+ENV/
+.venv/
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Environment variables
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Spotify cache
+.cache
+
+# Project specific - keep these files
+# (Commenting out so they ARE tracked)
+# *.db
+# *.png
+# *.txt
