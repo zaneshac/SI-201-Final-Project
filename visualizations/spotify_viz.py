@@ -1,5 +1,8 @@
 """
 Spotify visualization functions
+
+STRING-TO-INTEGER MAPPING:
+Uses calculation functions that JOIN with artists_lookup table.
 """
 import sqlite3
 import matplotlib.pyplot as plt
@@ -7,7 +10,12 @@ from calculations.spotify_calculations import calculate_avg_popularity_per_artis
 
 
 def visualize_avg_popularity_per_artist(conn: sqlite3.Connection, top_n: int = 12):
-    """Create horizontal bar chart of average popularity per artist."""
+    """
+    Create horizontal bar chart of average popularity per artist.
+
+    STRING-TO-INTEGER MAPPING:
+    Data comes from calculation function that JOINs with artists_lookup table.
+    """
     data = calculate_avg_popularity_per_artist(conn)
     if not data:
         return

@@ -1,12 +1,20 @@
 """
 OMDb API data collection module
 Author: Ariana Namei
+
+STRING-TO-INTEGER MAPPING:
+- Movie genres mapped to integers using genres_lookup table
+- Box office values mapped to integers using box_office_lookup table
+This eliminates ALL duplicate strings in movie data.
+Note: Movies may have multiple genres (e.g., "Action, Drama"), we store the full string
+as a single lookup entry to maintain the original genre combination.
 """
 import requests
 import sqlite3
 import time
 from typing import List
 from config.api_keys import OMDB_BASE, OMDB_API_KEY
+from database.db_helper import get_or_create_lookup_id
 
 
 def already_exists(conn: sqlite3.Connection, table: str, where_clause: str, params=()) -> bool:
@@ -20,6 +28,11 @@ def already_exists(conn: sqlite3.Connection, table: str, where_clause: str, para
 def fetch_movies_by_title_list(conn: sqlite3.Connection, title_list: List[str], max_new: int = 25):
     """
     Fetch movie data from OMDb API (limited to 25 new entries per run).
+
+    STRING-TO-INTEGER MAPPING:
+    - Movie genres: "Action, Sci-Fi" -> genre_id=1 (stored in genres_lookup)
+    - Box office: "$50.0M" -> box_office_id=1 (stored in box_office_lookup)
+    Same value reuses the same ID (no duplicates).
 
     Args:
         conn: Database connection
@@ -51,7 +64,13 @@ def fetch_movies_by_title_list(conn: sqlite3.Connection, title_list: List[str], 
                 year = int(data.get("Year", "").split("–")[0]) if data.get("Year") else None
             except:
                 year = None
-            genre = data.get("Genre")
+            genre_str = data.get("Genre")
+            box_office_str = data.get("BoxOffice")
+
+            # Convert genre and box_office strings to integer IDs using lookup tables
+            genre_id = get_or_create_lookup_id(conn, 'genres_lookup', 'genre_name', genre_str)
+            box_office_id = get_or_create_lookup_id(conn, 'box_office_lookup', 'box_office_value', box_office_str)
+
             runtime = None
             rt = data.get("Runtime")
             try:
@@ -63,14 +82,14 @@ def fetch_movies_by_title_list(conn: sqlite3.Connection, title_list: List[str], 
                 imdb_rating = float(data.get("imdbRating")) if data.get("imdbRating") and data.get("imdbRating") != "N/A" else None
             except:
                 imdb_rating = None
-            box_office = data.get("BoxOffice")
+
             c.execute("""
-                INSERT OR IGNORE INTO movies (imdb_id, title, year, genre, runtime, imdb_rating, box_office)
+                INSERT OR IGNORE INTO movies (imdb_id, title, year, genre_id, runtime, imdb_rating, box_office_id)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (imdb_id, title_ret, year, genre, runtime, imdb_rating, box_office))
+            """, (imdb_id, title_ret, year, genre_id, runtime, imdb_rating, box_office_id))
             conn.commit()
             inserted += 1
-            print(f"[OMDb] Inserted {title_ret} ({inserted}/{max_new})")
+            print(f"[OMDb] Inserted {title_ret} (genre_id={genre_id}, box_office_id={box_office_id}) ({inserted}/{max_new})")
             time.sleep(0.2)
         except Exception as e:
             print("OMDb error:", e)

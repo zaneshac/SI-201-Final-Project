@@ -1,12 +1,19 @@
 """
 Weather.gov API data collection module
 Author: Ariana Namei
+
+STRING-TO-INTEGER MAPPING:
+- City names mapped to integers using cities_lookup table
+- Dates mapped to integers using dates_lookup table
+- Forecast descriptions mapped to integers using forecasts_lookup table
+This eliminates ALL duplicate strings in weather data.
 """
 import requests
 import sqlite3
 import time
 from typing import List
 from config.api_keys import WEATHER_BASE
+from database.db_helper import get_or_create_lookup_id
 
 
 # City coordinates for weather data collection
@@ -40,6 +47,12 @@ def fetch_weather_for_cities(conn: sqlite3.Connection, cities: List[str], max_ne
     """
     Fetch weather data from Weather.gov API (limited to 25 new entries per run).
 
+    STRING-TO-INTEGER MAPPING:
+    - City names: "Ann Arbor, MI" -> city_id=1 (stored in cities_lookup)
+    - Dates: "2025-12-03" -> date_id=1 (stored in dates_lookup)
+    - Forecasts: "Sunny" -> forecast_id=1 (stored in forecasts_lookup)
+    All duplicate strings eliminated - same value reuses same ID.
+
     Args:
         conn: Database connection
         cities: List of city names to fetch weather for
@@ -55,6 +68,10 @@ def fetch_weather_for_cities(conn: sqlite3.Connection, cities: List[str], max_ne
         if city not in CITY_COORDS:
             continue
         lat, lon = CITY_COORDS[city]
+
+        # Convert city string to integer ID using lookup table
+        city_id = get_or_create_lookup_id(conn, 'cities_lookup', 'city_name', city)
+
         try:
             points_url = f"{WEATHER_BASE}/points/{lat},{lon}"
             r = requests.get(points_url, headers=headers, timeout=10)
@@ -74,21 +91,26 @@ def fetch_weather_for_cities(conn: sqlite3.Connection, cities: List[str], max_ne
             for p in periods:
                 if inserted >= max_new_per_run:
                     break
-                date = p.get("startTime", "").split("T")[0]
+                date_str = p.get("startTime", "").split("T")[0]
                 temp = p.get("temperature")
-                short_forecast = p.get("shortForecast")
+                short_forecast_str = p.get("shortForecast")
                 wind_speed = p.get("windSpeed", None)
                 temperature_high = temp
                 temperature_low = temp
+
+                # Convert date and forecast strings to integer IDs using lookup tables
+                date_id = get_or_create_lookup_id(conn, 'dates_lookup', 'date_value', date_str)
+                forecast_id = get_or_create_lookup_id(conn, 'forecasts_lookup', 'forecast_description', short_forecast_str)
+
                 try:
                     c.execute("""
-                        INSERT OR IGNORE INTO weather (city, date, temperature_high, temperature_low, wind_speed, short_forecast)
+                        INSERT OR IGNORE INTO weather (city_id, date_id, temperature_high, temperature_low, wind_speed, forecast_id)
                         VALUES (?, ?, ?, ?, ?, ?)
-                    """, (city, date, temperature_high, temperature_low, wind_speed, short_forecast))
+                    """, (city_id, date_id, temperature_high, temperature_low, wind_speed, forecast_id))
                     if c.rowcount:
                         conn.commit()
                         inserted += 1
-                        print(f"[Weather] Inserted {city} {date} ({inserted}/{max_new_per_run})")
+                        print(f"[Weather] Inserted {city} (city_id={city_id}) date_id={date_id} forecast_id={forecast_id} ({inserted}/{max_new_per_run})")
                 except Exception as e:
                     print("DB error (weather)", e)
             time.sleep(0.25)

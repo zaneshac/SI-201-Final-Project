@@ -1,6 +1,10 @@
 """
 Spotify API data collection module
 Author: Kevin Zang
+
+STRING-TO-INTEGER MAPPING:
+Artist names are mapped to integers using the artists_lookup table.
+This eliminates duplicate artist name strings in the database.
 """
 import sqlite3
 import time
@@ -8,6 +12,7 @@ from typing import List
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 from config.api_keys import SPOTIPY_CLIENT_ID, SPOTIPY_CLIENT_SECRET
+from database.db_helper import get_or_create_lookup_id
 
 
 # Initialize Spotify client
@@ -25,6 +30,11 @@ else:
 def fetch_tracks_for_artist_list(conn: sqlite3.Connection, artist_list: List[str], max_new: int = 25):
     """
     Fetch Spotify tracks for a list of artists (limited to 25 new entries per run).
+
+    STRING-TO-INTEGER MAPPING:
+    Artist names are converted to integer IDs using artists_lookup table.
+    Example: "Taylor Swift" -> 1, "Drake" -> 2 (first occurrence gets next ID)
+    If same artist appears in multiple tracks, same ID is reused.
 
     Args:
         conn: Database connection
@@ -51,15 +61,18 @@ def fetch_tracks_for_artist_list(conn: sqlite3.Connection, artist_list: List[str
                 artist_names = ", ".join([a["name"] for a in track["artists"]])
                 popularity = track.get("popularity") or 0
 
+                # Convert artist string to integer ID using lookup table
+                artist_id = get_or_create_lookup_id(conn, 'artists_lookup', 'artist_name', artist_names)
+
                 try:
                     c.execute("""
-                        INSERT OR IGNORE INTO tracks (title, artist, popularity)
+                        INSERT OR IGNORE INTO tracks (title, artist_id, popularity)
                         VALUES (?, ?, ?)
-                    """, (title, artist_names, popularity))
+                    """, (title, artist_id, popularity))
                     if c.rowcount:
                         conn.commit()
                         inserted += 1
-                        print(f"[Spotify] Inserted track: {title} - {artist_names} ({inserted}/{max_new})")
+                        print(f"[Spotify] Inserted track: {title} - {artist_names} (artist_id={artist_id}) ({inserted}/{max_new})")
                 except Exception as e:
                     print("DB insert error (tracks):", e)
         except Exception as e:

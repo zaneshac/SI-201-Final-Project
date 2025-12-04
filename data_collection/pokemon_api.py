@@ -1,11 +1,16 @@
 """
 PokeAPI data collection module
 Author: Zanesha Chowdhury
+
+STRING-TO-INTEGER MAPPING:
+Pokemon types (fire, water, etc.) are mapped to integers using the types_lookup table.
+This eliminates duplicate type strings in the database.
 """
 import requests
 import sqlite3
 import time
 from config.api_keys import POKEAPI_BASE
+from database.db_helper import get_or_create_lookup_id
 
 
 def already_exists(conn: sqlite3.Connection, table: str, where_clause: str, params=()) -> bool:
@@ -19,6 +24,10 @@ def already_exists(conn: sqlite3.Connection, table: str, where_clause: str, para
 def fetch_pokemon_up_to_limit(conn: sqlite3.Connection, target_new: int = 25, max_id: int = 151):
     """
     Fetch Pokemon data from PokeAPI (limited to 25 new entries per run).
+
+    STRING-TO-INTEGER MAPPING:
+    Pokemon type strings are converted to integer IDs using types_lookup table.
+    Example: "fire" -> 1, "water" -> 2 (first occurrence gets next ID)
 
     Args:
         conn: Database connection
@@ -45,10 +54,13 @@ def fetch_pokemon_up_to_limit(conn: sqlite3.Connection, target_new: int = 25, ma
             types = data.get("types", [])
             primary_type = types[0]["type"]["name"] if types else None
 
+            # Convert type string to integer ID using lookup table
+            type_id = get_or_create_lookup_id(conn, 'types_lookup', 'type_name', primary_type)
+
             c.execute("""
-                INSERT OR IGNORE INTO pokemon (id, name, base_experience, height, weight, primary_type)
+                INSERT OR IGNORE INTO pokemon (id, name, base_experience, height, weight, type_id)
                 VALUES (?, ?, ?, ?, ?, ?)
-            """, (pid, name, base_experience, height, weight, primary_type))
+            """, (pid, name, base_experience, height, weight, type_id))
 
             stats_map = {s["stat"]["name"]: s["base_stat"] for s in data.get("stats", [])}
             hp = stats_map.get("hp")
@@ -63,7 +75,7 @@ def fetch_pokemon_up_to_limit(conn: sqlite3.Connection, target_new: int = 25, ma
 
             conn.commit()
             inserted += 1
-            print(f"[PokeAPI] Inserted {pid} {name} ({inserted}/{target_new})")
+            print(f"[PokeAPI] Inserted {pid} {name} (type_id={type_id}) ({inserted}/{target_new})")
             time.sleep(0.15)
         except Exception as e:
             print("Error:", e)

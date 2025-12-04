@@ -1,5 +1,8 @@
 """
 Pokemon visualization functions
+
+STRING-TO-INTEGER MAPPING:
+Uses calculation functions that JOIN with types_lookup table.
 """
 import sqlite3
 import matplotlib.pyplot as plt
@@ -7,7 +10,12 @@ from calculations.pokemon_calculations import calculate_avg_base_exp_by_type
 
 
 def visualize_avg_base_exp_by_type(conn: sqlite3.Connection, top_n: int = 12):
-    """Create bar chart of average base experience by Pokemon type."""
+    """
+    Create bar chart of average base experience by Pokemon type.
+
+    STRING-TO-INTEGER MAPPING:
+    Data comes from calculation function that JOINs with types_lookup table.
+    """
     data = calculate_avg_base_exp_by_type(conn)
     if not data:
         return
